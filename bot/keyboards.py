@@ -1,20 +1,13 @@
-from aiogram.utils.keyboard import ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardBuilder, InlineKeyboardButton, \
-    InlineKeyboardMarkup
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardButton, InlineKeyboardMarkup
+from aiogram.utils.keyboard import ReplyKeyboardBuilder, KeyboardBuilder
 
 admin_panel_keyboard = ReplyKeyboardMarkup(
-    keyboard=[[KeyboardButton(text='add product'),
-               [KeyboardButton(text='add category')],
-               ]],
+    keyboard=[[KeyboardButton(text='add product'), KeyboardButton(text='add category')],
+              [KeyboardButton(text='Category larni korish'), KeyboardButton(text='Produktlarni korish')],
+              ],
     resize_keyboard=True)
 
-user_panel_keyboard = ReplyKeyboardMarkup(
-    keyboard=[[KeyboardButton(text='show all product'),
-               [KeyboardButton(text='show all category')],
-               ]],
-    resize_keyboard=True)
-
-yes_or_no = InlineKeyboardMarkup(
-    keyboard=[[InlineKeyboardButton(text='yes'),
-               [InlineKeyboardButton(text='no')],
-               ]],
+user_panel_keyboard = ReplyKeyboardMarkup(keyboard=[[
+    KeyboardButton(text='Produktlarni korish'), KeyboardButton(text='Category larni korish')
+]],
     resize_keyboard=True)

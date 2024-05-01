@@ -1,7 +1,6 @@
 import os
 
 from dotenv import load_dotenv
-from pip._internal.resolution.resolvelib import requirements
 from redis_dict import RedisDict
 
 load_dotenv('../.env')
@@ -14,5 +13,16 @@ product_db = RedisDict('product_db')
 
 
 async def product_scheme(data):
-    product_db[data['id']] = data
+    product_db[data.get('id')] = {
+        'id': data.get('id'),
+        'title': data.get('title'),
+        'description': data.get('description'),
+        'price': data.get('price'),
+        'brand': data.get('brand'),
+        'category': data.get('category'),
+        'thumbnail': data.get('thumbnail'),
+        'quantity': data.get('quantity')
 
+    }
+
+print(product_db)
