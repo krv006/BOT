@@ -12,17 +12,19 @@ category_db = RedisDict('category_db')
 product_db = RedisDict('product_db')
 
 
-async def product_scheme(data):
+async def book_scheme(data):
     product_db[data.get('id')] = {
         'id': data.get('id'),
         'title': data.get('title'),
-        'description': data.get('description'),
+        'text': data.get('title'),
+        'image': data.get('image'),
         'price': data.get('price'),
-        'brand': data.get('brand'),
-        'category': data.get('category'),
-        'thumbnail': data.get('thumbnail'),
-        'quantity': data.get('quantity')
-
+        'category': data.get('category')
     }
 
+
 print(product_db)
+print(category_db)
+
+# product_db.clear()
+# category_db.clear()

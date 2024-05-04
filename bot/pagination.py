@@ -23,8 +23,8 @@ def make_inline_button(product):
 async def pagination_start(message: Message):
     if product_db:
         product = product_db[1]
-        text = f"<b>{product['title']}</b>\n\n{product['description']}"
-        img = product['thumbnail']
+        text = f"<b>{product['title']}</b>\n\n{product['text']}"
+        img = product['image']
         await message.answer_photo(img, caption=text, reply_markup=make_inline_button(product))
     else:
         await message.answer('There are no products in database')
