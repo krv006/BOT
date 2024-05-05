@@ -3,7 +3,7 @@ from aiogram.filters import CommandStart, Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton, \
-    CallbackQuery
+    CallbackQuery, InlineQuery, InlineQueryResultPhoto, InlineQueryResultArticle, InputTextMessageContent
 from aiogram.utils.keyboard import ReplyKeyboardBuilder, InlineKeyboardBuilder
 
 import keyboards as kb
@@ -120,7 +120,7 @@ async def add_product(message: Message, state: FSMContext):
                 Product price: {data.get('price')}
                 Product quantity: {data.get('quantity')}
                 Product image: {data.get('image')}
-                Category id: {data.get('category')}"""
+                Category name: {data.get('category')}"""
         await book_scheme(data)
         await message.answer(text)
         await message.answer('Saqlandi!')
@@ -170,14 +170,32 @@ async def show_categories(message: Message):
 @main_router.message(F.text.in_(category_db))
 async def pocc(message: Message):
     ikb = InlineKeyboardBuilder()
-    for product in product_db:
-        if product_db[product]['category'] == message.text:
-            ikb.row(InlineKeyboardButton(text=product_db[product]['title'],
-                                         callback_data=product_db[product]['title']))
-    ikb.row(InlineKeyboardButton(text='❌', callback_data='delete'),
-            InlineKeyboardButton(text='Search 🔍', callback_data='search'))
-    ikb.adjust(2, repeat=True)
-    await message.answer(f"products of {message.text} category.", reply_markup=ikb.as_markup())
+    if product_db:
+        for product in product_db:
+            if product_db[product]['category'] == message.text:
+                ikb.row(InlineKeyboardButton(text=product_db[product]['title'],
+                                             callback_data=product_db[product]['title']))
+        ikb.row(InlineKeyboardButton(text='❌', callback_data='delete'),
+                InlineKeyboardButton(text='Search 🔍', callback_data='search'))
+        ikb.adjust(2, repeat=True)
+        await message.answer(f"products of {message.text} category.", reply_markup=ikb.as_markup())
+    else:
+        await message.answer("Bunday category bizda mavjud emas")
+
+@main_router.inline_query()
+async def search(message: Message, inline_query: InlineQuery):
+    iqr = InlineQueryResultArticle(
+        id='1',
+        title='kamron',
+        input_message_content=InputTextMessageContent(
+            message_text='nimadir'
+        ),
+        thumbnail_url="https://via.placeholder.com/150/771796",
+        description='narxi 8798798'
+
+    )
+
+    await inline_query.answer([iqr], cache_item=5)
 
 
 @main_router.callback_query(F.data == 'delete')
