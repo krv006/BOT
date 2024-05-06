@@ -173,15 +173,17 @@ async def show_categories(message: Message):
 @main_router.callback_query(F.data.endswith('cat'))
 async def faa(callback: CallbackQuery, bot: Bot):
     ikb = InlineKeyboardBuilder()
-    name = callback.data.split('-')[0]
-    for _, v in product_db.items():
-        if v['category'] == name:
-            ikb.row(InlineKeyboardButton(text=v['title'], callback_data='-aa'))
+    category_id = callback.data.split('-')[0]  # Category id ni olish
+    products_in_category = [product for product, v in product_db.items() if v['category'] == category_id]
+
+    for product_id in products_in_category:
+        product = product_db[product_id]
+        ikb.row(InlineKeyboardButton(text=product['title'], callback_data=product_id + '-aa'))
+
     ikb.adjust(2, repeat=True)
     await bot.edit_message_text(text='Siz tanlagan Categoryni productlari', chat_id=callback.message.chat.id,
                                 message_id=callback.message.message_id,
                                 reply_markup=ikb.as_markup(resize_keyboard=True))
-
 
 quantity = 1
 
@@ -201,20 +203,17 @@ async def change_plus(callback: CallbackQuery):
 
 
 @main_router.callback_query(F.data.endswith('aa'))
-async def f(callback: CallbackQuery, bot: Bot):
-    for _, v in product_db.items():
-        try:
-            await bot.delete_message(chat_id=callback.message.chat.id, message_id=callback.message.message_id)
-        except TelegramAPIError as e:
-            print(f"Error deleting message: {e}")
-        await callback.message.answer(text='Siz tanlagan Kitob haqida malumot')
-
-        ikb = InlineKeyboardBuilder()
-        ikb.row(InlineKeyboardButton(text='ortga', callback_data='ortga'))
-        ikb = make_plus_minus(quantity)
-        await callback.message.answer_photo(photo=v['image'], caption=f"🔵: {v['text']} \nNarxi💸 : {v['price']}",
-                                            reply_markup=ikb.as_markup(resize_keyboard=True))
-        break
+async def f(callback: CallbackQuery):
+    product_id = callback.data.split('-')[0]  # Product id ni olish
+    product = product_db[product_id]
+    await callback.message.delete()
+    await callback.message.answer(text='Siz tanlagan Kitob haqida malumot')
+    ikb = InlineKeyboardBuilder()
+    ikb.row(InlineKeyboardButton(text='ortga', callback_data='ortga'))
+    ikb = make_plus_minus(quantity)
+    await callback.message.answer_photo(photo=product['image'],
+                                        caption=f"🔵: {product['text']} \nNarxi💸 : {product['price']}",
+                                        reply_markup=ikb.as_markup(resize_keyboard=True))
 
 
 @main_router.message(F.text == 'Category larni korish')
@@ -244,7 +243,7 @@ async def pocc(message: Message):
 
 
 @main_router.inline_query()
-async def search(message: Message, inline_query: InlineQuery):
+async def search(inline_query: InlineQuery):
     iqr = InlineQueryResultArticle(
         id='1',
         title='kamron',
