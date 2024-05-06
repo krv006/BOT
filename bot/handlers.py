@@ -1,15 +1,28 @@
 from aiogram import Router, F, Bot
-from aiogram.filters import CommandStart, Command
+from aiogram.exceptions import TelegramAPIError
+from aiogram.filters import CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
-from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton, \
-    CallbackQuery, InlineQuery, InlineQueryResultPhoto, InlineQueryResultArticle, InputTextMessageContent
-from aiogram.utils.keyboard import ReplyKeyboardBuilder, InlineKeyboardBuilder
+from aiogram.types import Message, InlineKeyboardButton, \
+    CallbackQuery, InlineQuery, InlineQueryResultArticle, InputTextMessageContent
+from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 import keyboards as kb
 from config import ADMIN, book_scheme, category_db, product_db
 
 main_router = Router()
+
+
+# def make_plus_minus(quantity, product_id):
+def make_plus_minus(quantity):
+    ikb = InlineKeyboardBuilder()
+    ikb.row(InlineKeyboardButton(text="➖", callback_data="change-"),
+            InlineKeyboardButton(text=str(quantity), callback_data="number"),
+            InlineKeyboardButton(text="➕", callback_data="change+")
+            )
+    ikb.row(InlineKeyboardButton(text="◀️Orqaga", callback_data="categoryga"),
+            InlineKeyboardButton(text='🛒 Savatga qo\'shish', callback_data="savatga" + str(quantity)))
+    return ikb
 
 
 @main_router.message(CommandStart())
@@ -104,7 +117,7 @@ async def add_product(message: Message, state: FSMContext):
         img = message.photo[0].file_id
         await state.update_data(image=img)
         await state.set_state(AddProduct.category)
-        await message.answer('Category kiriting:')
+        await message.answer('Category tanlang:')
 
 
 @main_router.message(AddProduct.category)
@@ -151,10 +164,57 @@ async def add_category(message: Message, state: FSMContext):
 async def show_categories(message: Message):
     ikb = InlineKeyboardBuilder()
     for category in category_db.keys():
-        ikb.row(InlineKeyboardButton(text=category, callback_data=category))
+        ikb.row(InlineKeyboardButton(text=category, callback_data=category + '-cat'))
     ikb.row(InlineKeyboardButton(text='ortga', callback_data='ortga'))
     ikb.adjust(2, repeat=True)
     await message.answer('Tanlang...', reply_markup=ikb.as_markup(resize_keyboard=True))
+
+
+@main_router.callback_query(F.data.endswith('cat'))
+async def faa(callback: CallbackQuery, bot: Bot):
+    ikb = InlineKeyboardBuilder()
+    name = callback.data.split('-')[0]
+    for _, v in product_db.items():
+        if v['category'] == name:
+            ikb.row(InlineKeyboardButton(text=v['title'], callback_data='-aa'))
+    ikb.adjust(2, repeat=True)
+    await bot.edit_message_text(text='Siz tanlagan Categoryni productlari', chat_id=callback.message.chat.id,
+                                message_id=callback.message.message_id,
+                                reply_markup=ikb.as_markup(resize_keyboard=True))
+
+
+quantity = 1
+
+
+@main_router.callback_query(F.data.startswith("change"))
+async def change_plus(callback: CallbackQuery):
+    global quantity
+    if callback.data.startswith("change+"):
+        quantity += 1
+    elif quantity < 2:
+        await callback.answer('Eng kamida 1 ta kitob buyurtma qilishingiz mumkin! 😊', show_alert=True)
+        return
+    else:
+        quantity -= 1
+    ikb = make_plus_minus(quantity)
+    await callback.message.edit_reply_markup(str(callback.message.message_id), reply_markup=ikb.as_markup())
+
+
+@main_router.callback_query(F.data.endswith('aa'))
+async def f(callback: CallbackQuery, bot: Bot):
+    for _, v in product_db.items():
+        try:
+            await bot.delete_message(chat_id=callback.message.chat.id, message_id=callback.message.message_id)
+        except TelegramAPIError as e:
+            print(f"Error deleting message: {e}")
+        await callback.message.answer(text='Siz tanlagan Kitob haqida malumot')
+
+        ikb = InlineKeyboardBuilder()
+        ikb.row(InlineKeyboardButton(text='ortga', callback_data='ortga'))
+        ikb = make_plus_minus(quantity)
+        await callback.message.answer_photo(photo=v['image'], caption=f"🔵: {v['text']} \nNarxi💸 : {v['price']}",
+                                            reply_markup=ikb.as_markup(resize_keyboard=True))
+        break
 
 
 @main_router.message(F.text == 'Category larni korish')
@@ -167,7 +227,7 @@ async def show_categories(message: Message):
     await message.answer('Tanlang...', reply_markup=ikb.as_markup(resize_keyboard=True))
 
 
-@main_router.message(F.text.in_(category_db))
+@main_router.message(F.text == 'Produktlarni korish')
 async def pocc(message: Message):
     ikb = InlineKeyboardBuilder()
     if product_db:
@@ -181,6 +241,7 @@ async def pocc(message: Message):
         await message.answer(f"products of {message.text} category.", reply_markup=ikb.as_markup())
     else:
         await message.answer("Bunday category bizda mavjud emas")
+
 
 @main_router.inline_query()
 async def search(message: Message, inline_query: InlineQuery):

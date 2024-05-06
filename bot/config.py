@@ -28,3 +28,16 @@ print(category_db)
 
 # product_db.clear()
 # category_db.clear()
+
+# UUID
+# from uuid import uuid4
+#
+# # Yangi UUID yaratish
+# new_uuid = uuid4()
+#
+# # UUID ni ekranga chiqarish
+# print(new_uuid)
+#
+# # UUID ni string ko'rinishida olish
+# uuid_str = str(new_uuid)
+# print(uuid_str)
