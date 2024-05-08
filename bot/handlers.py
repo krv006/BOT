@@ -1,10 +1,9 @@
 from aiogram import Router, F, Bot
-from aiogram.exceptions import TelegramAPIError
 from aiogram.filters import CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.types import Message, InlineKeyboardButton, \
-    CallbackQuery, InlineQuery, InlineQueryResultArticle, InputTextMessageContent
+    CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 import keyboards as kb
@@ -20,7 +19,7 @@ def make_plus_minus(quantity):
             InlineKeyboardButton(text=str(quantity), callback_data="number"),
             InlineKeyboardButton(text="➕", callback_data="change+")
             )
-    ikb.row(InlineKeyboardButton(text="◀️Orqaga", callback_data="categoryga"),
+    ikb.row(InlineKeyboardButton(text="◀️Orqaga", callback_data="ortga"),
             InlineKeyboardButton(text='🛒 Savatga qo\'shish', callback_data="savatga" + str(quantity)))
     return ikb
 
@@ -165,7 +164,7 @@ async def show_categories(message: Message):
     ikb = InlineKeyboardBuilder()
     for category in category_db.keys():
         ikb.row(InlineKeyboardButton(text=category, callback_data=category + '-cat'))
-    ikb.row(InlineKeyboardButton(text='ortga', callback_data='ortga'))
+    ikb.row(InlineKeyboardButton(text='◀️Orqaga', callback_data='ortga'))
     ikb.adjust(2, repeat=True)
     await message.answer('Tanlang...', reply_markup=ikb.as_markup(resize_keyboard=True))
 
@@ -173,17 +172,17 @@ async def show_categories(message: Message):
 @main_router.callback_query(F.data.endswith('cat'))
 async def faa(callback: CallbackQuery, bot: Bot):
     ikb = InlineKeyboardBuilder()
-    category_id = callback.data.split('-')[0]  # Category id ni olish
+    category_id = callback.data.split('-')[0]
     products_in_category = [product for product, v in product_db.items() if v['category'] == category_id]
-
     for product_id in products_in_category:
         product = product_db[product_id]
         ikb.row(InlineKeyboardButton(text=product['title'], callback_data=product_id + '-aa'))
-
+    ikb.row(InlineKeyboardButton(text='◀️Orqaga', callback_data='ortga'))
     ikb.adjust(2, repeat=True)
     await bot.edit_message_text(text='Siz tanlagan Categoryni productlari', chat_id=callback.message.chat.id,
                                 message_id=callback.message.message_id,
                                 reply_markup=ikb.as_markup(resize_keyboard=True))
+
 
 quantity = 1
 
@@ -204,15 +203,15 @@ async def change_plus(callback: CallbackQuery):
 
 @main_router.callback_query(F.data.endswith('aa'))
 async def f(callback: CallbackQuery):
-    product_id = callback.data.split('-')[0]  # Product id ni olish
+    product_id = callback.data.split('-')[0]
     product = product_db[product_id]
     await callback.message.delete()
     await callback.message.answer(text='Siz tanlagan Kitob haqida malumot')
     ikb = InlineKeyboardBuilder()
-    ikb.row(InlineKeyboardButton(text='ortga', callback_data='ortga'))
+    ikb.row(InlineKeyboardButton(text='◀️Orqaga', callback_data='ortga'))
     ikb = make_plus_minus(quantity)
     await callback.message.answer_photo(photo=product['image'],
-                                        caption=f"🔵: {product['text']} \nNarxi💸 : {product['price']}",
+                                        caption=f"🔹Kitob nomi: {product['title']} \n🔹Kitob haqida:\n{product['text']} \nNarxi💸 : {product['price']}",
                                         reply_markup=ikb.as_markup(resize_keyboard=True))
 
 
@@ -221,63 +220,19 @@ async def show_categories(message: Message):
     ikb = InlineKeyboardBuilder()
     for category in category_db.keys():
         ikb.row(InlineKeyboardButton(text=category, callback_data=category))
-    ikb.row(InlineKeyboardButton(text='ortga', callback_data='ortga'))
+    ikb.row(InlineKeyboardButton(text='◀️Orqaga', callback_data='ortga'))
     ikb.adjust(2, repeat=True)
     await message.answer('Tanlang...', reply_markup=ikb.as_markup(resize_keyboard=True))
 
 
-@main_router.message(F.text == 'Produktlarni korish')
-async def pocc(message: Message):
-    ikb = InlineKeyboardBuilder()
-    if product_db:
-        for product in product_db:
-            if product_db[product]['category'] == message.text:
-                ikb.row(InlineKeyboardButton(text=product_db[product]['title'],
-                                             callback_data=product_db[product]['title']))
-        ikb.row(InlineKeyboardButton(text='❌', callback_data='delete'),
-                InlineKeyboardButton(text='Search 🔍', callback_data='search'))
-        ikb.adjust(2, repeat=True)
-        await message.answer(f"products of {message.text} category.", reply_markup=ikb.as_markup())
-    else:
-        await message.answer("Bunday category bizda mavjud emas")
-
-
-@main_router.inline_query()
-async def search(inline_query: InlineQuery):
-    iqr = InlineQueryResultArticle(
-        id='1',
-        title='kamron',
-        input_message_content=InputTextMessageContent(
-            message_text='nimadir'
-        ),
-        thumbnail_url="https://via.placeholder.com/150/771796",
-        description='narxi 8798798'
-
-    )
-
-    await inline_query.answer([iqr], cache_item=5)
-
-
-@main_router.callback_query(F.data == 'delete')
-async def delete(callback: CallbackQuery, bot: Bot):
-    if str(callback.message.from_user.id) == ADMIN:
-        await bot.delete_message(callback.from_user.id, callback.message.message_id)
-        await callback.message.answer('Tanlang...', reply_markup=kb.admin_panel_keyboard)
-    else:
-        await bot.delete_message(callback.from_user.id, callback.message.message_id)
-        await callback.message.answer('Tanlang...', reply_markup=kb.user_panel_keyboard)
+# ikb.row(InlineKeyboardButton(text='Search 🔍', callback_data='search'))
 
 
 @main_router.callback_query(F.data == 'ortga')
-async def ortga(callback: CallbackQuery, bot: Bot):
-    if str(callback.message.from_user.id) == ADMIN:
-        await bot.delete_message(callback.from_user.id, callback.message.message_id)
-        await callback.message.answer('Menu larimizdan birini tanlang...', reply_markup=kb.admin_panel_keyboard)
+async def ortga(callback: CallbackQuery):
+    if str(callback.from_user.id) == ADMIN:
+        await callback.answer('Siz adminsiz!')
+        await callback.answer('Tanlang', reply_markup=kb.admin_panel_keyboard)
     else:
-        await bot.delete_message(callback.from_user.id, callback.message.message_id)
-        await callback.message.answer('Menu larimizdan birini tanlang...', reply_markup=kb.user_panel_keyboard)
-
-
-@main_router.message(F.photo)
-async def photo(message: Message):
-    await message.answer(message.text)
+        await callback.answer('Hello user')
+        await callback.answer('Tanlang', reply_markup=kb.user_panel_keyboard)
