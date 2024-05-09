@@ -1,238 +1,97 @@
-from aiogram import Router, F, Bot
-from aiogram.filters import CommandStart
+import requests
+from aiogram import F, Bot, Router
+from aiogram.enums import ParseMode
+from aiogram.filters import Command, CommandStart, Filter
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
-from aiogram.types import Message, InlineKeyboardButton, \
-    CallbackQuery
-from aiogram.utils.keyboard import InlineKeyboardBuilder
+from aiogram.types import InlineKeyboardButton, Message, CallbackQuery, KeyboardButton, ReplyKeyboardRemove, \
+    InlineQueryResultArticle, InlineQuery, InputTextMessageContent
+from aiogram.utils.keyboard import InlineKeyboardBuilder, ReplyKeyboardBuilder
+from aiogram.utils.i18n import gettext as _
 
 import keyboards as kb
-from config import ADMIN, book_scheme, category_db, product_db
+
+from cons import ADMIN_LIST, database
+from keyboards import show_categories, make_plus_minus, main_keyboard
 
 main_router = Router()
 
 
-# def make_plus_minus(quantity, product_id):
-def make_plus_minus(quantity):
-    ikb = InlineKeyboardBuilder()
-    ikb.row(InlineKeyboardButton(text="➖", callback_data="change-"),
-            InlineKeyboardButton(text=str(quantity), callback_data="number"),
-            InlineKeyboardButton(text="➕", callback_data="change+")
-            )
-    ikb.row(InlineKeyboardButton(text="◀️Orqaga", callback_data="ortga"),
-            InlineKeyboardButton(text='🛒 Savatga qo\'shish', callback_data="savatga" + str(quantity)))
-    return ikb
-
-
 @main_router.message(CommandStart())
-async def start(message: Message):
-    if str(message.from_user.id) == ADMIN:
-        await message.answer('Siz adminsiz!')
-        await message.answer('Tanlang', reply_markup=kb.admin_panel_keyboard)
-    else:
-        await message.answer('Hello user')
-        await message.answer('Tanlang', reply_markup=kb.user_panel_keyboard)
+async def command_start_handler(message: Message) -> None:
+    rkb = main_keyboard
+    msg = 'Assalomu alaykum! Tanlang.'
+    if str(message.from_user.id) not in database['users']:
+        msg = 'Assalomu alaykum! \nXush kelibsiz!'
+        users = database['users']
+        users[str(message.from_user.id)] = True
+        database['users'] = users
+    await message.answer(text=msg, reply_markup=rkb.as_markup(resize_keyboard=True))
 
 
-@main_router.message(F.text == "📞 Biz bilan bog\'lanish")
-async def books(message: Message) -> None:
-    text = f"""
-    Telegram: @factorbooks_info\n
-    Murojat uchun 📞 : +{998901078055}\n
-    🤖 Bot Rustamov Kamron (@kamron_rustamov_dev) tomonidan tayyorlandi.
-        """
-    await message.answer(text)
+@main_router.message(Command(commands='help'))
+async def help_command(message: Message) -> None:
+    await message.answer('''Buyruqlar:
+/start - Botni ishga tushirish
+/help - Yordam''')
 
 
-@main_router.message(F.text == "🔵 Biz ijtimoyi tarmoqlarda")
-async def books(message: Message) -> None:
+@main_router.message(F.text == '🔵 Biz ijtimoyi tarmoqlarda')
+async def our_social_network(message: Message) -> None:
     ikb = InlineKeyboardBuilder()
-    ikb.row(InlineKeyboardButton(text="Ikar_factor", url="https://t.me/ikar_factor"))
-    ikb.row(InlineKeyboardButton(text="Factor_books", url="https://t.me/factor_books"))
-
-    await message.answer("Biz ijtimoyi tarmoqlarda ham kuzatishingiz mumkin", reply_markup=ikb.as_markup())
-
-
-class AddProduct(StatesGroup):
-    id = State()
-    title = State()
-    text = State()
-    price = State()
-    quantity = State()
-    image = State()
-    category = State()
-
-
-@main_router.message(F.text == 'add product')
-async def add_product(message: Message, state: FSMContext):
-    if str(message.from_user.id) == ADMIN:
-        await state.set_state(AddProduct.id)
-        await message.answer('Id kiriting:')
-
-
-@main_router.message(AddProduct.id)
-async def add_product(message: Message, state: FSMContext):
-    if str(message.from_user.id) == ADMIN:
-        await state.update_data(id=message.text)
-        await state.set_state(AddProduct.title)
-        await message.answer('Title kiriting:')
-
-
-@main_router.message(AddProduct.title)
-async def add_product(message: Message, state: FSMContext):
-    if str(message.from_user.id) == ADMIN:
-        await state.update_data(title=message.text)
-        await state.set_state(AddProduct.text)
-        await message.answer('Text kiriting:')
-
-
-@main_router.message(AddProduct.text)
-async def add_product(message: Message, state: FSMContext):
-    if str(message.from_user.id) == ADMIN:
-        await state.update_data(text=message.text)
-        await state.set_state(AddProduct.price)
-        await message.answer('Narxini kiriting:')
-
-
-@main_router.message(AddProduct.price)
-async def add_product(message: Message, state: FSMContext):
-    if str(message.from_user.id) == ADMIN:
-        await state.update_data(price=message.text)
-        await state.set_state(AddProduct.quantity)
-        await message.answer('Neshta ekanini kiriting:')
-
-
-@main_router.message(AddProduct.quantity)
-async def add_product(message: Message, state: FSMContext):
-    if str(message.from_user.id) == ADMIN:
-        await state.update_data(quantity=message.text)
-        await state.set_state(AddProduct.image)
-        await message.answer('Image kiriting:')
-
-
-@main_router.message(AddProduct.image)
-async def add_product(message: Message, state: FSMContext):
-    if str(message.from_user.id) == ADMIN:
-        img = message.photo[0].file_id
-        await state.update_data(image=img)
-        await state.set_state(AddProduct.category)
-        await message.answer('Category tanlang:')
-
-
-@main_router.message(AddProduct.category)
-async def add_product(message: Message, state: FSMContext):
-    if str(message.from_user.id) == ADMIN:
-        await state.update_data(category=message.text)
-        data = await state.get_data()
-        await state.clear()
-        text = f""" Everything correct?
-                Product id: {data.get('id')}
-                Product title: {data.get('title')}
-                Product text: {data.get('text')}
-                Product price: {data.get('price')}
-                Product quantity: {data.get('quantity')}
-                Product image: {data.get('image')}
-                Category name: {data.get('category')}"""
-        await book_scheme(data)
-        await message.answer(text)
-        await message.answer('Saqlandi!')
-
-
-class AddCategory(StatesGroup):
-    category_name = State()
-
-
-@main_router.message(F.text == 'add category')
-async def add_category(message: Message, state: FSMContext):
-    if str(message.from_user.id) == ADMIN:
-        await state.set_state(AddCategory.category_name)
-        await message.answer('Category kiriting:')
-
-
-@main_router.message(AddCategory.category_name)
-async def add_category(message: Message, state: FSMContext):
-    if str(message.from_user.id) == ADMIN:
-        await state.update_data(category_name=message.text)
-        data = await state.get_data()
-        await state.clear()
-        category_db[data['category_name']] = True
-        await message.answer('Category qoshildi!')
+    ikb.row(InlineKeyboardButton(text='IKAR | Factor Books', url='https://t.me/ikar_factor'))
+    ikb.row(InlineKeyboardButton(text='Factor Books', url='https://t.me/factor_books'))
+    ikb.row(InlineKeyboardButton(text='\"Factor Books\" nashiryoti', url='https://t.me/factorbooks'))
+    await message.answer('Biz ijtimoiy tarmoqlarda', reply_markup=ikb.as_markup())
 
 
 @main_router.message(F.text == '📚 Kitoblar')
-async def show_categories(message: Message):
-    ikb = InlineKeyboardBuilder()
-    for category in category_db.keys():
-        ikb.row(InlineKeyboardButton(text=category, callback_data=category + '-cat'))
-    ikb.row(InlineKeyboardButton(text='◀️Orqaga', callback_data='ortga'))
-    ikb.adjust(2, repeat=True)
-    await message.answer('Tanlang...', reply_markup=ikb.as_markup(resize_keyboard=True))
+async def books(message: Message) -> None:
+    ikb = show_categories(message.from_user.id)
+    await message.answer('Kategoriyalardan birini tanlang', reply_markup=ikb.as_markup())
 
 
-@main_router.callback_query(F.data.endswith('cat'))
-async def faa(callback: CallbackQuery, bot: Bot):
-    ikb = InlineKeyboardBuilder()
-    category_id = callback.data.split('-')[0]
-    products_in_category = [product for product, v in product_db.items() if v['category'] == category_id]
-    for product_id in products_in_category:
-        product = product_db[product_id]
-        ikb.row(InlineKeyboardButton(text=product['title'], callback_data=product_id + '-aa'))
-    ikb.row(InlineKeyboardButton(text='◀️Orqaga', callback_data='ortga'))
-    ikb.adjust(2, repeat=True)
-    await bot.edit_message_text(text='Siz tanlagan Categoryni productlari', chat_id=callback.message.chat.id,
-                                message_id=callback.message.message_id,
-                                reply_markup=ikb.as_markup(resize_keyboard=True))
+@main_router.callback_query(F.data.startswith('orqaga'))
+async def back_handler(callback: CallbackQuery):
+    await callback.message.edit_text('Kategoriyalardan birini tanlang',
+                                     reply_markup=show_categories(callback.from_user.id).as_markup())
 
 
-quantity = 1
+@main_router.message(F.text == "📞 Biz bilan bog'lanish")
+async def message(message: Message) -> None:
+    text = f"""\n
+\n
+Telegram: @sarvar_py_dev\n
+📞  +{998994312269}\n
+🤖 Bot Davranbekov Sarvarbek (@sarvar_py_dev) tomonidan tayorlandi.\n"""
+    await message.answer(text=text, parse_mode=ParseMode.HTML)
 
 
-@main_router.callback_query(F.data.startswith("change"))
-async def change_plus(callback: CallbackQuery):
-    global quantity
-    if callback.data.startswith("change+"):
-        quantity += 1
-    elif quantity < 2:
-        await callback.answer('Eng kamida 1 ta kitob buyurtma qilishingiz mumkin! 😊', show_alert=True)
-        return
-    else:
-        quantity -= 1
-    ikb = make_plus_minus(quantity)
-    await callback.message.edit_reply_markup(str(callback.message.message_id), reply_markup=ikb.as_markup())
+@main_router.message(lambda msg: msg.text[-36:] in database['products'])
+async def answer_inline_query(message: Message):
+    msg = message.text[-36:]
+    product = database['products'][msg]
+    ikb = make_plus_minus(1, msg)
+    await message.delete()
+    await message.answer_photo(photo=product['image'], caption=product['text'], reply_markup=ikb.as_markup())
 
 
-@main_router.callback_query(F.data.endswith('aa'))
-async def f(callback: CallbackQuery):
-    product_id = callback.data.split('-')[0]
-    product = product_db[product_id]
-    await callback.message.delete()
-    await callback.message.answer(text='Siz tanlagan Kitob haqida malumot')
-    ikb = InlineKeyboardBuilder()
-    ikb.row(InlineKeyboardButton(text='◀️Orqaga', callback_data='ortga'))
-    ikb = make_plus_minus(quantity)
-    await callback.message.answer_photo(photo=product['image'],
-                                        caption=f"🔹Kitob nomi: {product['title']} \n🔹Kitob haqida:\n{product['text']} \nNarxi💸 : {product['price']}",
-                                        reply_markup=ikb.as_markup(resize_keyboard=True))
-
-
-@main_router.message(F.text == 'Category larni korish')
-async def show_categories(message: Message):
-    ikb = InlineKeyboardBuilder()
-    for category in category_db.keys():
-        ikb.row(InlineKeyboardButton(text=category, callback_data=category))
-    ikb.row(InlineKeyboardButton(text='◀️Orqaga', callback_data='ortga'))
-    ikb.adjust(2, repeat=True)
-    await message.answer('Tanlang...', reply_markup=ikb.as_markup(resize_keyboard=True))
-
-
-# ikb.row(InlineKeyboardButton(text='Search 🔍', callback_data='search'))
-
-
-@main_router.callback_query(F.data == 'ortga')
-async def ortga(callback: CallbackQuery):
-    if str(callback.from_user.id) == ADMIN:
-        await callback.answer('Siz adminsiz!')
-        await callback.answer('Tanlang', reply_markup=kb.admin_panel_keyboard)
-    else:
-        await callback.answer('Hello user')
-        await callback.answer('Tanlang', reply_markup=kb.user_panel_keyboard)
+@main_router.callback_query()
+async def product_handler(callback: CallbackQuery):
+    if callback.data in database['categories']:
+        ikb = InlineKeyboardBuilder()
+        for k, v in database['products'].items():
+            if v['category_id'] == callback.data:
+                ikb.add(InlineKeyboardButton(text=v['name'], callback_data=k))
+        if str(callback.from_user.id) in database['basket']:
+            ikb.add(InlineKeyboardButton(text=f'🛒 Savat ({len(database["basket"][str(callback.from_user.id)])})',
+                                         callback_data='savat'))
+        ikb.add(InlineKeyboardButton(text="◀️ orqaga", callback_data='orqaga'))
+        ikb.adjust(2, repeat=True)
+        await callback.message.edit_text(database['categories'][callback.data], reply_markup=ikb.as_markup())
+    elif callback.data in database['products']:
+        product = database['products'][callback.data]
+        ikb = make_plus_minus(1, callback.data)
+        await callback.message.delete()
+        await callback.message.answer_photo(photo=product['image'], caption=product['text'],
+                                            reply_markup=ikb.as_markup())
