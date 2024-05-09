@@ -1,13 +1,9 @@
 from aiogram import F, Router
-from aiogram.enums import ContentType
-from aiogram.fsm.context import FSMContext
-from aiogram.fsm.state import StatesGroup, State
-from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, \
-    KeyboardButton, Message
+from aiogram.types import CallbackQuery, InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from cons import database
-from keyboards import show_categories, make_plus_minus, main_keyboard
+from keyboards import show_categories, make_plus_minus
 
 basket_router = Router()
 

@@ -1,17 +1,11 @@
-import requests
-from aiogram import F, Bot, Router
+from aiogram import F, Router
+from aiogram import F, Router
 from aiogram.enums import ParseMode
-from aiogram.filters import Command, CommandStart, Filter
-from aiogram.fsm.context import FSMContext
-from aiogram.fsm.state import StatesGroup, State
-from aiogram.types import InlineKeyboardButton, Message, CallbackQuery, KeyboardButton, ReplyKeyboardRemove, \
-    InlineQueryResultArticle, InlineQuery, InputTextMessageContent
-from aiogram.utils.keyboard import InlineKeyboardBuilder, ReplyKeyboardBuilder
-from aiogram.utils.i18n import gettext as _
+from aiogram.filters import Command, CommandStart
+from aiogram.types import InlineKeyboardButton, Message, CallbackQuery
+from aiogram.utils.keyboard import InlineKeyboardBuilder
 
-import keyboards as kb
-
-from cons import ADMIN_LIST, database
+from cons import database
 from keyboards import show_categories, make_plus_minus, main_keyboard
 
 main_router = Router()

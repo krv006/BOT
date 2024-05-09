@@ -13,7 +13,7 @@ import keyboards as kb
 from filters import ChatTypeFilter
 from keyboards import show_categories
 from filters import IsAdmin
-from untils import png_to_url
+from untils import upload_file
 
 save_product = {}
 
@@ -130,7 +130,7 @@ async def add_product(message: Message, state: FSMContext):
 async def add_product(message: Message, state: FSMContext):
     file = await message.bot.get_file(message.photo[-1].file_id)
     img_byte = (await message.bot.download(file.file_id)).read()
-    url = await png_to_url(img_byte)
+    url = await upload_file(img_byte)
 
     save_product['image'] = message.photo[0].file_id
     save_product['thumbnail_url'] = url
