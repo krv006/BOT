@@ -97,7 +97,7 @@ async def register(message: Message, state: FSMContext):
 @main_router.message(AddUser.manzil)
 async def register(message: Message, state: FSMContext):
     if str(message.from_user.id) != ADMIN:
-        await state.update_data(familya=message.text)
+        await state.update_data(manzil=message.text)
         data = await state.get_data()
         await state.clear()
         text = f""" Hammasi to'rimi tekshiring: 
