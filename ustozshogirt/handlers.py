@@ -1,14 +1,10 @@
-from aiogram import Router, F, Bot
-from aiogram.exceptions import TelegramAPIError
+from aiogram import Router, F
 from aiogram.filters import CommandStart
-from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
-from aiogram.types import Message, InlineKeyboardButton, \
-    CallbackQuery, InlineQuery, InlineQueryResultArticle, InputTextMessageContent, ReplyKeyboardMarkup, KeyboardButton
-from aiogram.utils.keyboard import InlineKeyboardBuilder, ReplyKeyboardBuilder
+from aiogram.types import Message, KeyboardButton
+from aiogram.utils.keyboard import ReplyKeyboardBuilder
 
 # import keyboards as kb
-from config import ADMIN
 
 main_router = Router()
 
